@@ -1,18 +1,21 @@
 # training_de
 
-1.set up env
+# Milestone 1 - Basics & Setup
+
+1. set up env
 
 - Windown: python -m venv venv
-- Mac: python3 -m venv env
+- Mac: python3 -m .venv env
 - Windown: venv\Scripts\activate
 - Mac: source venv/bin/activate
-  2.install package
-  Upgrade pip safely
-  python -m ensurepip --upgrade
-  python -m pip install --upgrade pip
-  pip install --upgrade pip
-  pip install -r requirements.txt
-  or pip install fastapi uvicorn celery[redis]
+
+2. install package
+   Upgrade pip safely
+   python -m ensurepip --upgrade
+   python -m pip install --upgrade pip
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   or pip install fastapi uvicorn celery[redis]
 
 3. Run
    uvicorn app.main:app --reload
@@ -61,9 +64,22 @@ user_router.py              product_router.py
 ↓
 [Response → ProductResponse (JSON)]
 
-5. Background Task
+6. Background Task
 
-6. Celery
+# Milestone 3: Background Tasks & Celery
+
+7. Celery
+   You (HTTP request)
+   ↓
+   FastAPI (api container)
+   ↓
+   Push task to Redis queue
+   ↓
+   Redis (message broker)
+   ↓
+   Celery Worker (worker container)
+   ↓
+   Executes background task
 
 - without Docker
   celery_app = Celery(
@@ -75,5 +91,27 @@ user_router.py              product_router.py
   - install
     brew install redis
     redis-server
+    celery -A app.tasks.celery_app "worker" --loglevel=info
+    Component Purpose
+    worker Runs background tasks
+    beat Runs scheduled tasks periodically
+    flower Web UI for monitoring Celery
+  - stop
+    redis-cli shutdown
+
+# Milestone 4: Docker config
 
 - with Docker
+  Docker’s job is to containerize your project — meaning:each part (API, Celery, Redis) runs in its own isolated environment, with its own dependencies, and can communicate with the others over a shared virtual network.
+  cmd
+
+* docker-compose up --build
+* docker-compose down
+* docker ps
+* docker logs celery_worker -f
+
+# Milestone 5: Scheduled Tasks & Monitoring: Celery Beat, Flower
+
+# Milestone 6: Authentication & Authorization
+
+# Milestone 7: Pytest and Advanced Features & Optimization
