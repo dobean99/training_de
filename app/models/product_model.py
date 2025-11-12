@@ -1,13 +1,10 @@
-from pydantic import BaseModel
-from typing import Optional
+from sqlalchemy import Column, Integer, String, Float
+from app.database import Base
 
-class Product(BaseModel):
-    id: int
-    name: str
-    price: float
-    description: Optional[str] = None
+class Product(Base):
+    __tablename__ = "products"
 
-class ProductCreate(BaseModel):
-    name: str
-    price: float
-    description: Optional[str] = None
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    price = Column(Float)
+    description = Column(String, nullable=True)

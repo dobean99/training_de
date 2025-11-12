@@ -1,24 +1,66 @@
 from typing import List
-from fastapi import APIRouter,HTTPException
-from app.models.user_model import User, UserCreate
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from app.database import SessionLocal
+from app.models.user_model import User
+from app.schemas.user_schema import UserCreate, UserResponse
 
 router = APIRouter(prefix="/users",tags=["Users"])
 
-users = []
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-@router.post("",response_model=User)
-def create_user(user:UserCreate):
-    new_user = User(id=len(users)+1,**user.model_dump())
-    users.append(new_user)
-    return new_user
+@router.get("/", response_model=List[UserResponse])
+def get_all_users(db: Session = Depends(get_db)):
+     users= db.query(User).all()
+     return users
 
-@router.get("/{user_id}",response_model=User)
-def get_user(user_id:int):
-    for user in users:
-        if(user.id == user_id):
-            return user
-    raise HTTPException(status_code=404, detail="User not found")
+@router.post("/",response_model=UserResponse)
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    existing = db.query(User).filter(User.email == user.email).first()
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="Email already registered"
+        )
+    db_user = User(name=user.name, email=user.email)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
 
-@router.get("", response_model=List[User])
-def get_all_users():
-    return users
+@router.get("/{user_id}", response_model=UserResponse)
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    #no have => None => exception
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@router.delete("/{user_id}", status_code=204)
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db.delete(user)
+    db.commit()
+    return
+
+@router.put("/{user_id}", response_model=UserResponse)
+def update_user(user_id: int, updated_user: UserCreate, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.name = updated_user.name
+    user.email = updated_user.email
+
+    db.commit()
+    db.refresh(user)
+    return user

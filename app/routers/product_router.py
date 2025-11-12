@@ -1,12 +1,30 @@
-from fastapi import APIRouter,HTTPException
-from app.models.product_model import Product,ProductCreate
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from app.database import SessionLocal
+from app.models.product_model import Product
+from app.schemas.product_schema import ProductCreate, ProductResponse
 
-router = APIRouter(prefix="/product",tags=["Products"])
+router = APIRouter(prefix="/products", tags=["Products"])
 
-product = []
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-@router.post("/",response_model=Product)
-def create_product(product:ProductCreate):
-    new_product = Product(id=len(product)+1,**product.model_dump())
-    product.append(new_product)
-    return new_product
+@router.post("/", response_model=ProductResponse)
+def create_product(product: ProductCreate, db: Session = Depends(get_db)):
+    #converts Pydantic model → SQLAlchemy object
+    db_product = Product(**product.model_dump())
+    db.add(db_product)
+    db.commit()
+    db.refresh(db_product)
+    return db_product
+
+@router.get("/{product_id}", response_model=ProductResponse)
+def get_product(product_id: int, db: Session = Depends(get_db)):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
