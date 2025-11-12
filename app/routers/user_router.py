@@ -1,11 +1,19 @@
+from sqlalchemy.exc import IntegrityError
 from typing import List
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models.user_model import User
 from app.schemas.user_schema import UserCreate, UserResponse
-
+from app.tasks.email_tasks import send_welcome_email
 router = APIRouter(prefix="/users",tags=["Users"])
+
+
+def send_email(email: str):
+    # Simulate slow email sending
+    import time
+    time.sleep(3)
+    print(f"📧 Sent email to {email}")
 
 # Dependency to get DB session
 def get_db():
@@ -32,6 +40,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    send_welcome_email(user.email)
     return db_user
 
 @router.get("/{user_id}", response_model=UserResponse)
