@@ -18,6 +18,6 @@ services:
   celery_worker:
     build: .
     container_name: celery_worker
-    command: celery -A app.tasks.celery_app worker --loglevel=info
+    command: celery -A app.tasks.celery_app worker -l info
     depends_on:
       - redis

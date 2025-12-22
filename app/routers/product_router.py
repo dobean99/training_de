@@ -6,6 +6,7 @@ from app.schemas.product_schema import ProductCreate, ProductResponse
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -13,14 +14,16 @@ def get_db():
     finally:
         db.close()
 
+
 @router.post("/", response_model=ProductResponse)
 def create_product(product: ProductCreate, db: Session = Depends(get_db)):
-    #converts Pydantic model → SQLAlchemy object
+    # converts Pydantic model → SQLAlchemy object
     db_product = Product(**product.model_dump())
     db.add(db_product)
     db.commit()
     db.refresh(db_product)
     return db_product
+
 
 @router.get("/{product_id}", response_model=ProductResponse)
 def get_product(product_id: int, db: Session = Depends(get_db)):
